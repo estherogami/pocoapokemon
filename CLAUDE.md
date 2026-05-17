@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Qué es este proyecto
 
-App web interactiva que digitaliza el planner imprimible oficial de **Pokémon Pokopia** (juego de Koei Tecmo, 2026). MVP cubre checklist diaria + diario fechado; iteraciones siguientes añaden recetas, Space Organizer, Storage Containers y planning a largo plazo.
+App web interactiva inspirada en el planner imprimible oficial de **Pokémon Pokopia** (juego de Koei Tecmo, 2026). Una vez recibido el prototipo de Claude Design, el alcance ha cambiado: ya **no es** un Daily Planner genérico, sino un **gestor de proyectos de construcción dentro del juego** con materiales, recetas, hábitats Pokémon, agenda y diario personal — todo con estética "libreta cosida" (papel, washi tape, sellos, fuente manuscrita en notas).
 
-El plan completo y vigente está en `C:\Users\Esther\.claude\plans\planeemos-un-diario-para-happy-shore.md`. **Léelo antes de empezar cualquier cambio no trivial** — contiene decisiones técnicas, iteraciones y criterios de cierre.
+**Fuente de verdad visual y de flujo**: `docs/prototype/pokopia-planner/`. Ver `docs/prototype.md` para el modelo de dominio completo.
+
+El plan original sigue en `C:\Users\Esther\.claude\plans\planeemos-un-diario-para-happy-shore.md` pero **el modelo de datos del prototipo lo extiende** — confiar antes en `docs/prototype.md` para entidades y pantallas.
 
 ## Stack y por qué
 
@@ -71,7 +73,22 @@ No hay API pública de Pokopia. El flujo es:
 3. `scripts/seed-pokemon.ts` lee ese JSON y hace upsert en Supabase, llamado desde `supabase db reset` o un job manual.
 4. La app **nunca** consulta los wikis origen en runtime o en CI.
 
-Origen: `pokopiamap.com/pokedex/{n}` (Pokémon), `pokopiadb.com/database/items/{slug}` (items). Respetar rate-limit (1 req/s) y User-Agent identificable.
+Origen: `pokopiamap.com/pokedex/{n}` (Pokémon), `pokopiadb.com/database/items/{slug}` (items/recetas/hábitats). Respetar rate-limit (1 req/s) y User-Agent identificable.
+
+### Modelo de dominio (resumen — detalle en docs/prototype.md)
+
+Entidades centrales del prototipo:
+
+- **Build**: proyecto de construcción con name, type, location, recipe_id, status, progress, materials con have/need, subtasks reordenables, helpers Pokémon, note.
+- **Recipe**: blueprint reutilizable (`{ id, name, tag, size, time, mats: [material_id, qty][] }`).
+- **Material**: catálogo con `glyph` (uno de 10: wood/stone/wool/glass/cord/nails/berries/water/grass/cloth) y color.
+- **Pokémon**: id de 2 letras (`BU`, `PI`…), name, where, when, tip, color, rarity ★.
+- **Habitat**: vincula Pokémon objetivo + materiales + cebo recomendado. Crear un hábitat genera tareas en la agenda.
+- **Inventory**: per-user `material_id → have`.
+- **ScheduleEntry**: agenda diaria con tag (`rutina` / `build` / `captura` / `ocio`).
+- **DiaryEntry**: per-day con mood, texto manuscrito ~500 chars, photos[], auto_summary[].
+- **Activity**: 4 tipos (`recolectar` / `capturar` / `receta` / `evento`), feeds into ScheduleEntry.
+- **WishlistItem**: ideas futuras con tag.
 
 ## Convenciones
 

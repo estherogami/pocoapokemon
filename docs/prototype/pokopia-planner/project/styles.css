@@ -1,0 +1,153 @@
+/* Pokopia planner — tokens + utilities */
+
+:root{
+  /* Color */
+  --pk-purple:        #80579E;
+  --pk-purple-dark:   #6B4A82;
+  --pk-purple-soft:   #C59BFF;
+  --pk-purple-tint:   #EFE3FF;
+  --pk-blue:          #007AFF;
+  --pk-lime:          #C1E36C;
+  --pk-cyan:          #95E1F3;
+  --pk-text:          #585858;
+  --pk-text-soft:     #8a8580;
+  --pk-white:         #FFFFFF;
+  --pk-beige:         #DCB680;
+  --pk-beige-soft:    #EBD7B5;
+  --pk-beige-cream:   #F6EBD3;
+  --pk-paper:         #FBF3E0;
+  --pk-brown:         #A17458;
+  --pk-brown-dark:    #7A5640;
+  --pk-error:         #E60012;
+
+  /* Radii */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 15px;
+  --r-2xl: 20px;
+  --r-3xl: 28px;
+
+  /* Shadows */
+  --sh-raised:   0px 2px 8px  rgba(0,0,0,0.08);
+  --sh-elevated: 0px 4px 16px rgba(0,0,0,0.12);
+  --sh-float:    0px 8px 24px rgba(0,0,0,0.16);
+  --sh-paper:    0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 6px rgba(122,86,64,0.15), 0 12px 24px -12px rgba(122,86,64,0.20);
+
+  --pk-font: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Reset within artboards */
+.pk, .pk * { box-sizing: border-box; }
+.pk{
+  font-family: var(--pk-font);
+  color: var(--pk-text);
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Paper texture for the libreta variation */
+.pk-paper-bg{
+  background-color: var(--pk-paper);
+  background-image:
+    radial-gradient(rgba(161,116,88,0.10) 1px, transparent 1.4px),
+    radial-gradient(rgba(161,116,88,0.06) 1px, transparent 1.4px);
+  background-size: 22px 22px, 22px 22px;
+  background-position: 0 0, 11px 11px;
+}
+.pk-paper-ruled{
+  background-color: var(--pk-paper);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px, transparent 31px,
+    rgba(161,116,88,0.18) 31px, rgba(161,116,88,0.18) 32px
+  );
+}
+
+.pk-cream-bg{ background-color: var(--pk-beige-cream); }
+.pk-white-bg{ background-color: var(--pk-white); }
+
+/* Pill / chip */
+.pk-pill{
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+  color: var(--pk-text);
+}
+.pk-pill--lime{ background: var(--pk-lime); }
+.pk-pill--cyan{ background: var(--pk-cyan); }
+.pk-pill--purple{ background: var(--pk-purple-soft); }
+.pk-pill--beige{ background: var(--pk-beige); }
+.pk-pill--ghost{ background: transparent; box-shadow: inset 0 0 0 1.5px var(--pk-brown); color: var(--pk-brown-dark); }
+
+/* Checkbox */
+.pk-check{
+  width: 20px; height: 20px; border-radius: var(--r-sm);
+  border: 2px solid var(--pk-purple);
+  background: var(--pk-white);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.pk-check--on{ background: var(--pk-purple); }
+.pk-check--on::after{
+  content:""; width: 9px; height: 5px;
+  border-left: 2.2px solid #fff; border-bottom: 2.2px solid #fff;
+  transform: rotate(-45deg) translate(1px,-1px);
+}
+
+/* Material bar */
+.pk-bar{
+  height: 8px; border-radius: 999px; background: rgba(161,116,88,0.20); overflow: hidden;
+}
+.pk-bar > i{
+  display:block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--pk-purple), var(--pk-purple-soft));
+}
+.pk-bar--lime > i{ background: linear-gradient(90deg, #8CB744, var(--pk-lime)); }
+.pk-bar--beige > i{ background: linear-gradient(90deg, var(--pk-brown), var(--pk-beige)); }
+
+/* Pokémon avatar placeholder */
+.pk-poke{
+  width: 44px; height: 44px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 900; letter-spacing: 0.5px;
+  color: var(--pk-white);
+  background: var(--pk-purple);
+  flex-shrink: 0;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,0.12), 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* Washi tape strip */
+.pk-tape{
+  position: absolute;
+  width: 110px; height: 22px;
+  opacity: 0.85;
+  background-image: repeating-linear-gradient(45deg,
+    rgba(255,255,255,0.35) 0 6px, rgba(255,255,255,0) 6px 12px);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.pk-tape--purple{ background-color: var(--pk-purple-soft); }
+.pk-tape--lime{ background-color: var(--pk-lime); }
+.pk-tape--cyan{ background-color: var(--pk-cyan); }
+.pk-tape--beige{ background-color: var(--pk-beige); }
+
+/* Stamps for "completado" etc */
+.pk-stamp{
+  display: inline-block;
+  border: 2.5px solid var(--pk-purple);
+  color: var(--pk-purple);
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 900;
+  letter-spacing: 1px; text-transform: uppercase;
+  transform: rotate(-6deg);
+}
+.pk-stamp--lime{ border-color: #6FA420; color: #6FA420; }
+.pk-stamp--error{ border-color: var(--pk-error); color: var(--pk-error); }
+
+/* utility */
+.pk-row{ display:flex; align-items:center; gap: 12px; }
+.pk-col{ display:flex; flex-direction:column; }
+
+/* hide scrollbars inside cards */
+.pk *::-webkit-scrollbar{ display:none; }
