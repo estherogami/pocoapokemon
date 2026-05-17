@@ -91,12 +91,20 @@ pnpm vitest run --coverage   # con cobertura HTML en coverage/
 - `use.baseURL: 'http://localhost:4321'`
 - `use.trace: 'on-first-retry'`, `screenshot: 'only-on-failure'`, `video: 'retain-on-failure'`.
 
-### Datos y aislamiento
+### Datos y aislamiento (MVP — solo `localStorage`)
 
-- **Usuario de test**: crear `tests/e2e/fixtures/users.ts` con email/password hardcoded (`test@pokopia.local` / pass aleatoria fija). Sembrado vía script que llama a `supabase.auth.admin.createUser` antes de los tests.
-- **DB limpia por suite**: en `globalSetup`, ejecutar `supabase db reset` o un script SQL que truncate las tablas de usuario (`daily_plans`, `journal_entries`). **No** entre tests — sería demasiado lento.
-- **Bypass del magic link**: para evitar abrir el inbox en CI, el test loguea vía `supabase.auth.signInWithPassword({ email, password })` directamente y setea las cookies en la página antes de navegar (helper `loginAs(page, user)`).
-- **Cada test es independiente**: no asume orden, no comparte datos con otros tests del mismo archivo si se puede evitar.
+- **Sin DB, sin auth**: el MVP persiste todo en `localStorage`. Los tests E2E no necesitan Supabase ni global setup.
+- **Limpieza entre tests**: cada test empieza desde `localStorage` vacío. Playwright crea un contexto nuevo por test por defecto, lo que ya garantiza un origen sin storage. Si dentro de un test necesitas sembrar datos, usa `page.addInitScript()` antes del primer `page.goto()`.
+- **Helper de sembrado**: `tests/e2e/fixtures/seedStorage.ts` con utilidades tipo `await seedPlan(page, '2026-05-17', { items: [...] })` que internamente hacen `addInitScript` con la key `pk:plan:2026-05-17`.
+- **Cada test es independiente**: no asume orden, no comparte datos con otros tests del mismo archivo.
+
+### Cuando entre Supabase (iteración 4+)
+
+- Crear `tests/e2e/fixtures/users.ts` con email/password hardcoded para `signInWithPassword`.
+- `globalSetup` ejecuta `supabase db reset` antes de la suite.
+- Helper `loginAs(page, user)` que setea las cookies de Supabase antes del primer navigate.
+
+Hasta entonces, ignorar esta sección.
 
 ### Convenciones
 
@@ -121,10 +129,10 @@ pnpm exec playwright show-report       # abre el report HTML del último run
 | Iter | Vitest | Playwright |
 |---|---|---|
 | **0** | `src/lib/sanity.test.ts` (1 expect) | `tests/e2e/smoke.spec.ts` (`/` muestra "Pokopia") |
-| **1** | `src/lib/date.test.ts` (toISODate, addDays, parseDate) | `auth.spec.ts`: redirect sin sesión; login completa y aterriza en `/planificador/hoy`; signout vuelve a `/login` |
-| **2** | reducer/optimistic update de checklist | `planner.spec.ts`: añadir 3 ítems, marcar 1, recargar → persiste; navegar día siguiente → vacío; volver → datos previos; añadir/marcar 2 goals |
-| **3** | hook `useDebouncedSave` (debounce + cleanup) | `journal.spec.ts`: escribir en "Dear Planner", esperar autosave, recargar → texto persiste; cambiar fecha → en blanco; volver → reaparece |
-| **4** | parser del scrape contra fixtures HTML; filtro normalizado de búsqueda | `autocomplete.spec.ts`: escribir "pi" en "Today I met" → "Pikachu" en sugerencias; seleccionar → guarda; recargar → persiste |
+| **1** | snapshot tests de primitivos UI (`Pill`, `WashiTape`, `Stamp`) renderizados con clases correctas; `src/lib/date.test.ts` (toISODate, addDays) | `design-system.spec.ts`: smoke por ruta `/dev/components` (storybook ad-hoc) verifica que cada primitivo se renderiza |
+| **2** | reducer/optimistic update de checklist; `PlannerRepo` con `localStorage` fake (de `jest-environment-jsdom`) | `planner.spec.ts`: añadir 3 ítems, marcar 1, recargar → persiste; navegar día siguiente → vacío; volver → datos previos; añadir/marcar 2 goals |
+| **3** | hook `useDebouncedSave` (debounce + cleanup); `DiaryRepo` | `journal.spec.ts`: escribir en "Dear Planner", esperar autosave, recargar → texto persiste; cambiar fecha → en blanco; volver → reaparece |
+| **4+** | migración localStorage → Supabase: tests de `SupabaseRepo` con cliente mock + tests de migración de datos existentes | `auth.spec.ts`: redirect sin sesión; magic-link login; signout. `migration.spec.ts`: usuario con datos en localStorage entra a la app post-migración y ve sus planes/diary sincronizados |
 
 ## CI
 
@@ -132,9 +140,11 @@ Workflow en `.github/workflows/ci.yml` con tres jobs en paralelo:
 
 1. **lint**: `pnpm install --frozen-lockfile` + `pnpm lint`.
 2. **unit**: `pnpm install --frozen-lockfile` + `pnpm test:run`.
-3. **e2e**: `pnpm install --frozen-lockfile` + `pnpm exec playwright install --with-deps chromium` + `supabase start` (necesita action `supabase/setup-cli`) + `pnpm db:reset` + `pnpm test:e2e`.
+3. **e2e**: `pnpm install --frozen-lockfile` + `pnpm exec playwright install --with-deps chromium` + `pnpm test:e2e`. **No** requiere Supabase en MVP.
 
 PR no se mergea si cualquiera falla. Vercel deploy preview se publica en cada PR automáticamente.
+
+Cuando entre Supabase (iteración 4+), el job `e2e` añadirá: `supabase start` (vía action `supabase/setup-cli`) + `pnpm db:reset` antes de `pnpm test:e2e`.
 
 ## Debug rápido
 
@@ -144,4 +154,5 @@ PR no se mergea si cualquiera falla. Vercel deploy preview se publica en cada PR
 | Vitest cuelga en jsdom | Falta `@vitest-environment jsdom` o no se importó `@testing-library/jest-dom/vitest`. |
 | Tests E2E flaky | Buscar `waitForTimeout`, reemplazar por `toBeVisible` o `toHaveCount`. |
 | "Cannot find module 'msw'" | No usar MSW por ahora — los tests E2E usan Supabase real, los unit usan cliente fake inyectado. |
-| Cookies de sesión no se setean en test | Verificar que `loginAs` use `page.context().addCookies(...)` con `domain: 'localhost'` y `httpOnly: true` para las cookies de Supabase. |
+| Cookies de sesión no se setean en test (iteración 4+) | Verificar que `loginAs` use `page.context().addCookies(...)` con `domain: 'localhost'` y `httpOnly: true` para las cookies de Supabase. |
+| Tests E2E ven datos de tests previos | `localStorage` no se está limpiando entre tests. Por defecto Playwright crea contexto nuevo por test; revisar `playwright.config.ts` no comparta contexto. Si usas `test.describe.serial`, añade `await page.context().clearCookies(); await page.evaluate(() => localStorage.clear())` en `beforeEach`. |

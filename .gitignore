@@ -37,6 +37,9 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
+# Claude Code internals (worktrees, projects)
+.claude/
+
 # prototype: standalone HTML is 8.8MB of inlined assets generated from the
 # .jsx sources in the same folder — those are the source of truth
 docs/prototype/pokopia-planner/project/Pokopia Planner.html

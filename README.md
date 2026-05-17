@@ -1,28 +1,27 @@
 # Pokopia Planner
 
-Aplicación web interactiva para gestionar las actividades dentro del juego **Pokémon Pokopia**. Digitaliza el planner imprimible oficial (checklist diaria, objetivos, diario personal) siguiendo la estética del juego.
+Aplicación web interactiva inspirada en el planner imprimible oficial de **Pokémon Pokopia** (juego de Koei Tecmo, 2026). El MVP digitaliza el Daily Planner y el Journal del PDF original, ya en la estética V1 "Libreta cosida" del prototipo de Claude Design. Iteraciones futuras incorporan el resto del prototipo: construcciones, materiales, hábitats Pokémon, agenda y catálogo.
 
 > Estado: **pre-MVP — Iteración 0 (Setup)**. Ver `docs/iteration-0-setup.md`.
 
 ## Stack
 
-| Capa | Tecnología |
-|---|---|
-| Framework | [Astro](https://astro.build) con **islas React** |
-| Estilos | [Tailwind CSS](https://tailwindcss.com) + design tokens propios |
-| Backend / DB | [Supabase](https://supabase.com) (Postgres + Auth) |
-| Auth | Magic link por email |
-| Tests unit | [Vitest](https://vitest.dev) |
-| Tests E2E | [Playwright](https://playwright.dev) |
-| Deploy | [Vercel](https://vercel.com) (adapter `@astrojs/vercel`) |
+| Capa | Tecnología MVP | Iteraciones futuras |
+|---|---|---|
+| Framework | [Astro](https://astro.build) con **islas React** | — |
+| Estilos | [Tailwind CSS](https://tailwindcss.com) + design tokens del prototipo | — |
+| Storage | **`localStorage`** del navegador (single-user) | Migrar a [Supabase](https://supabase.com) + Auth |
+| Tests unit | [Vitest](https://vitest.dev) | — |
+| Tests E2E | [Playwright](https://playwright.dev) | — |
+| Deploy | [Vercel](https://vercel.com) (adapter `@astrojs/vercel`) | — |
+
+> El MVP **no requiere backend**: todo persiste en `localStorage` del usuario. Esto simplifica enormemente Iteración 0 (sin Docker, sin Supabase CLI, sin cuenta Supabase). Cuando llegue el momento de multi-usuario / multi-dispositivo migraremos a Supabase con auth magic link.
 
 ## Requisitos
 
 - Node.js ≥ 20 LTS
 - pnpm ≥ 9 (`npm i -g pnpm`)
-- Docker Desktop (para `supabase start` local)
-- Supabase CLI (`brew install supabase/tap/supabase` o equivalente Windows)
-- Cuenta gratuita en Supabase y Vercel para el despliegue
+- Cuenta gratuita en Vercel para el despliegue (opcional para desarrollo local)
 
 ## Primeros pasos
 
@@ -30,20 +29,11 @@ Aplicación web interactiva para gestionar las actividades dentro del juego **Po
 # 1. Instalar dependencias
 pnpm install
 
-# 2. Configurar variables de entorno
-cp .env.example .env
-# Editar .env con SUPABASE_URL y SUPABASE_ANON_KEY (locales o del proyecto remoto)
-
-# 3. Levantar Supabase local + aplicar migraciones
-supabase start
-supabase db reset    # aplica migrations + seed
-
-# 4. Generar tipos de Supabase para TypeScript
-pnpm db:types
-
-# 5. Arrancar dev server
+# 2. Arrancar dev server
 pnpm dev             # → http://localhost:4321
 ```
+
+No hace falta `.env` ni levantar servicios externos para el MVP.
 
 ## Scripts
 
@@ -57,60 +47,54 @@ pnpm dev             # → http://localhost:4321
 | `pnpm test:e2e` | Playwright E2E (levanta servidor automáticamente) |
 | `pnpm test:e2e:ui` | Playwright con UI interactiva para debug |
 | `pnpm lint` | ESLint sobre `src/` |
-| `pnpm db:types` | Regenera `src/lib/supabase/types.ts` desde Supabase |
-| `pnpm db:reset` | `supabase db reset` (drop + migrations + seed) |
 
-## Estructura del repo (objetivo)
+## Estructura del repo (objetivo MVP)
 
 ```
 .
 ├── astro.config.mjs
 ├── tailwind.config.mjs
 ├── src/
-│   ├── pages/                  # rutas (planificador, diario, login, api/auth)
+│   ├── pages/                  # rutas (planificador, diario, index)
 │   ├── layouts/                # BaseLayout
 │   ├── components/
-│   │   ├── ui/                 # Button, Card, Input, Checkbox (primitivos)
-│   │   └── islands/            # Componentes React hidratados
+│   │   ├── ui/                 # SheetPaper, Card, Check, Pill, Stamp, WashiTape, Mascot, ...
+│   │   └── islands/            # Componentes React hidratados (Checklist, Journal, ...)
 │   ├── lib/
-│   │   ├── supabase/           # clientes server/browser + tipos generados
-│   │   ├── date.ts             # helpers de fecha
-│   │   └── api/                # wrappers Supabase usados por islas
-│   ├── styles/global.css
-│   └── middleware.ts           # auth gate
-├── supabase/migrations/        # SQL versionado
-├── seed/                       # JSON pre-scrapeado (pokemon.json, items.json)
-├── scripts/                    # scrape-pokemon.ts, seed-pokemon.ts, ...
+│   │   ├── storage/            # wrappers de localStorage tipados
+│   │   └── date.ts             # helpers de fecha
+│   └── styles/global.css
+├── seed/                       # datos seed copiados del prototipo (builds, pokemon, recipes, mats)
 ├── tests/e2e/                  # Playwright
 └── docs/
     ├── iteration-0-setup.md
-    └── testing.md
+    ├── testing.md
+    └── prototype.md
 ```
 
 ## Documentación
 
-- **[CLAUDE.md](./CLAUDE.md)** — guía para sesiones de Claude Code.
-- **[docs/iteration-0-setup.md](./docs/iteration-0-setup.md)** — checklist de la iteración actual.
-- **[docs/testing.md](./docs/testing.md)** — cómo se organizan y ejecutan los tests.
-- **[www.pocoapokemon.jp-DESIGN 2.md](./www.pocoapokemon.jp-DESIGN%202.md)** — sistema de diseño (paleta, tipografía, componentes).
-- **[daily-planner-en.pdf](./daily-planner-en.pdf)** — planner oficial del juego que digitalizamos.
+- **[CLAUDE.md](./CLAUDE.md)** — guía para sesiones de Claude Code (arquitectura, convenciones, qué NO hacer).
+- **[docs/iteration-0-setup.md](./docs/iteration-0-setup.md)** — checklist paso a paso de la iteración actual.
+- **[docs/testing.md](./docs/testing.md)** — estrategia Vitest + Playwright y tests por iteración.
+- **[docs/prototype.md](./docs/prototype.md)** — modelo de dominio extraído del prototipo de Claude Design + cómo reproducirlo.
+- **[docs/prototype/pokopia-planner/](./docs/prototype/pokopia-planner/)** — bundle completo del prototipo (HTML/JSX/CSS).
+- **[www.pocoapokemon.jp-DESIGN 2.md](./www.pocoapokemon.jp-DESIGN%202.md)** — sistema de diseño base (paleta, tipografía).
 
 ## Roadmap
 
-| Iteración | Funcionalidad |
-|---|---|
-| **0** | Setup: scaffold + Tailwind + Vitest + Playwright + Supabase + deploy Vercel |
-| **1** | Auth magic link + middleware |
-| **2** | Daily Planner (checklist + goals + navegación por fechas) |
-| **3** | Journal (formulario fechado con autosave) |
-| **4** | Catálogo Pokémon Pokopia (scrape + autocomplete en Journal) |
-| 5+ | Space Organizer, Recipes, Storage Containers, Longer-Term Planning |
+| Iteración | Funcionalidad | Storage |
+|---|---|---|
+| **0** | Setup: scaffold Astro + Tailwind + Vitest + Playwright + deploy Vercel | — |
+| **1** | Design system: tokens, fuentes y primitivos UI del prototipo (`SheetPaper`, `WashiTape`, `Stamp`, `Mascot`, `Pill`, `Check`, `MaterialBar`, `PokeAvatar`, `MapDot`) | — |
+| **2** | Daily Planner (checklist + goals + navegación por fechas) con estética V1 | `localStorage` |
+| **3** | Journal (formulario fechado con autosave) con estética V1 | `localStorage` |
+| **4+** | Backend Supabase + auth + Builds + materiales + hábitats + agenda + catálogo DB. Ver `docs/prototype.md` para el modelo de dominio extendido. | Supabase |
 
-Plan completo: `C:\Users\Esther\.claude\plans\planeemos-un-diario-para-happy-shore.md`.
+## Origen de datos
 
-## Origen de datos Pokémon / items
-
-**No existe API pública de Pokopia.** El catálogo se construye scrapeando una vez ([pokopiamap.com](https://pokopiamap.com) para Pokémon, [pokopiadb.com](https://pokopiadb.com) para items) → JSON commiteado en `seed/` → cargado en Supabase. La app **no** consulta wikis en runtime. Ver `docs/iteration-0-setup.md` § "Datos".
+- **MVP**: datos seed copiados directamente del prototipo (`docs/prototype/pokopia-planner/project/common.jsx`) → `seed/*.json` en el repo. 4 builds de ejemplo, 5 Pokémon, recetas y materiales con sus glyphs.
+- **Iteraciones futuras**: ampliar el catálogo scrapeando una vez [pokopiamap.com](https://pokopiamap.com) y [pokopiadb.com](https://pokopiadb.com) (no hay API pública de Pokopia). Dumps a `seed/` también. La app **no** consulta wikis en runtime.
 
 ## Licencia y atribución
 
